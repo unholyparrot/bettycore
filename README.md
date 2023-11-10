@@ -1,1 +1,3 @@
-tbd
+# Betty core
+
+TBD

@@ -2,6 +2,10 @@
  * Текущие попытки состоят в создании сколько-нибудь похожего на нормальный nf-core пайплайн по обработке данных
  */
 
+// 
+// MODULE: Local to the pipeline
+// 
+
 
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
@@ -13,6 +17,7 @@ include { INPUT_CHECK                     } from '../subworkflows/local/input_ch
 // MODULE: Directly from nf-core
 //
 include { FASTQC as FASTQC_RAW                   } from '../modules/nf-core/fastqc/main'
+
 
 workflow BETTY {
 
@@ -29,12 +34,15 @@ workflow BETTY {
     // Check the quality of short reads, then trim and filter  
     // 
 
+    // я автора плагина в кино водил, превращается reads.fastq.gz -> reads.gz; то есть теряется полная часть расширения файла,
+    // от чего гарантированно появляется исключение, что это error gz file !
     FASTQC_RAW (
         ch_raw_short_reads
     )
 
     ch_versions = ch_versions.mix(FASTQC_RAW.out.versions.first())
 
+    ch_versions.view()
 
     
 }
