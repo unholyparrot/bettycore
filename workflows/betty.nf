@@ -7,12 +7,14 @@ ch_multiqc_config          = Channel.fromPath("$projectDir/assets/multiqc_config
 // 
 // MODULE: Local to the pipeline
 // 
-
+include { KRAKEN2                                } from '../modules/local/kraken2'
+include { KRONA_DB                               } from '../modules/local/krona_db'
+include { KRONA                                  } from '../modules/local/krona'
 
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
-include { INPUT_CHECK                     } from '../subworkflows/local/input_check'
+include { INPUT_CHECK                            } from '../subworkflows/local/input_check'
 
 
 //
@@ -56,14 +58,31 @@ workflow BETTY {
     ch_short_reads_prepped = FASTP.out.reads
     ch_versions = ch_versions.mix(FASTP.out.versions.first())
 
-
-
-
     // Запускаем FASTQC после обработки ридов
     FASTQC_TRIMMED (
         FASTP.out.reads
     )
     ch_versions.mix(FASTQC_TRIMMED.out.versions)
+
+    // Запускаем kraken2 для разбиения по таксономии
+    KRAKEN2 (
+        ch_raw_short_reads
+    )
+    ch_versions.mix(KRAKEN2.out.versions)
+
+    if (params.krona_db){
+            ch_krona_db = Channel.value(file( "${params.krona_db}" ))
+        } else {
+            KRONA_DB ()
+            ch_krona_db = KRONA_DB.out.db
+            ch_versions = ch_versions.mix(KRONA_DB.out.versions.first())
+        }
+    
+    KRONA (
+        KRAKEN2.out.results_for_krona,
+        ch_krona_db
+    )
+    ch_versions = ch_versions.mix(KRONA.out.versions.first())
 
     // экспорт информации о версиях программного обеспечения
     CUSTOM_DUMPSOFTWAREVERSIONS (
