@@ -10,6 +10,9 @@ ch_multiqc_config          = Channel.fromPath("$projectDir/assets/multiqc_config
 include { KRAKEN2                                } from '../modules/local/kraken2'
 include { KRONA_DB                               } from '../modules/local/krona_db'
 include { KRONA                                  } from '../modules/local/krona'
+include { SPADES_META as SPADES_UNCLASSIFIED     } from '../modules/local/spades_meta'
+include { PARSE_KRAKEN2_AND_REQUEST               } from '../modules/local/parse_kraken_and_request'
+
 
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
@@ -64,6 +67,8 @@ workflow BETTY {
     )
     ch_versions = ch_versions.mix(FASTQC_TRIMMED.out.versions)
 
+    // TODO: добавить объединение нескольких запусков по meta.run
+
     // Запускаем kraken2 для разбиения по таксономии
     KRAKEN2 (
         ch_raw_short_reads
@@ -85,6 +90,30 @@ workflow BETTY {
         ch_krona_db
     )
     ch_versions = ch_versions.mix(KRONA.out.versions.first())
+
+    // сразу после разбиения таксономии и составления картинок мы начинаем дальнейшие процедуры
+    // сборка неклассифицированных ридов как метагенома 
+    SPADES_UNCLASSIFIED (
+        KRAKEN2.out.unclassified
+    )
+    ch_versions = ch_versions.mix(SPADES_UNCLASSIFIED.out.versions.first())
+
+    // запуск пайплайна по запрашиванию геномов и характеризации покрытия для невирусных последовательностей
+
+    // проведение теоретической оценки покрытия таксонов
+    PARSE_KRAKEN2_AND_REQUEST (
+        KRAKEN2.out.report
+    )
+
+    // NON_VIRAL_EVALUATION (
+    //     PARSE_KRAKEN2_AND_REQUEST.out.non_viral
+    // )
+
+    // // запуск пайплайна по запрашиванию вирусных геномов, характеризации покрытия и попытке сборки для вирусных последовательностей 
+
+    // VIRAL_EVALUATION (
+    //     PARSE_KRAKEN2_AND_REQUEST.out.viral
+    // )
 
     // экспорт информации о версиях программного обеспечения
     CUSTOM_DUMPSOFTWAREVERSIONS (
