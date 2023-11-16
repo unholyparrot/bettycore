@@ -7,12 +7,14 @@ report_section_order:
     order: -1000
 
 export_plots: true
+log_filesize_limit: 1000000000
 
 data_format: "yaml"
 
 run_modules:
   - fastqc
   - fastp
+  - kraken
 
 ## Module order
 top_modules:
@@ -26,6 +28,17 @@ top_modules:
       info: "After trimming and, if requested, contamination removal."
       path_filters:
         - "*trimmed*"
+  - "kraken":
+      name: "Kraken2"
+      anchor: "Kraken2"
+      target: "Kraken2"
+      doi: "10.1101/gr.210641.116"
+      path_filters:
+        - "*.kraken2_report.txt"
+
+sp:
+  kraken:
+    fn: "*.kraken2_report.txt"
 
 extra_fn_clean_exts:
   - "_fastp"

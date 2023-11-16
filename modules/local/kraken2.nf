@@ -8,13 +8,10 @@ process KRAKEN2 {
         tuple val(meta), path(reads)
 
     output:
-        tuple val(meta), path("results.krona"), emit: results_for_krona
-        tuple val(meta), path("*kraken2_report.txt")          , emit: report
-        // то есть полностью осознанно игнорируем одноконцевые риды!
-        tuple val(meta), path("*_kraken2_unclassified*.fq"),    emit: unclassified
-        path "versions.yml"                                   , emit: versions
-        // tuple val(sample_id), path("${sample_id}_kraken_unclassified_{1,2}.fq")
-        // tuple val(sample_id), path("${sample_id}_kraken2.report")
+        tuple val(meta), path("results.krona"),                 emit: results_for_krona  // результаты для отчета krona
+        tuple val(meta), path("*kraken2_report.txt"),           emit: report             // результаты для дальнейших проверок
+        tuple val(meta), path("*_kraken2_unclassified*.fq"),    emit: unclassified       // неклассифицированные риды для сборки
+        path "versions.yml",                                    emit: versions           // версии для отчета
 
     script:
         prefix = task.ext.prefix ?: "${meta.id}"

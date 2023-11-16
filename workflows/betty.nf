@@ -62,22 +62,24 @@ workflow BETTY {
     FASTQC_TRIMMED (
         FASTP.out.reads
     )
-    ch_versions.mix(FASTQC_TRIMMED.out.versions)
+    ch_versions = ch_versions.mix(FASTQC_TRIMMED.out.versions)
 
     // Запускаем kraken2 для разбиения по таксономии
     KRAKEN2 (
         ch_raw_short_reads
     )
-    ch_versions.mix(KRAKEN2.out.versions)
+    ch_versions = ch_versions.mix(KRAKEN2.out.versions.first())
 
+    // Проверяем переданный путь к базе данных krona
     if (params.krona_db){
-            ch_krona_db = Channel.value(file( "${params.krona_db}" ))
+            ch_krona_db = Channel.value(file( "${params.krona_db}" ))  // если путь есть, обращаемся к файлу пути
         } else {
-            KRONA_DB ()
+            KRONA_DB ()  // если путь не передан, то самостоятельно устанавливаем krona db
             ch_krona_db = KRONA_DB.out.db
-            ch_versions = ch_versions.mix(KRONA_DB.out.versions.first())
+            ch_versions = ch_versions.mix(KRONA_DB.out.versions)
         }
     
+    // делаем красивые html репорты кроны
     KRONA (
         KRAKEN2.out.results_for_krona,
         ch_krona_db
@@ -96,6 +98,7 @@ workflow BETTY {
     ch_multiqc_files = ch_multiqc_files.mix(FASTQC_RAW.out.zip.collect{it[1]}.ifEmpty([]))      // FASTQC RAW reads
     ch_multiqc_files = ch_multiqc_files.mix(FASTP.out.json.collect{it[1]}.ifEmpty([]))          // FASTP (adapter and quality trimming)
     ch_multiqc_files = ch_multiqc_files.mix(FASTQC_TRIMMED.out.zip.collect{it[1]}.ifEmpty([]))  // FASTQC clean reads
+    ch_multiqc_files = ch_multiqc_files.mix(KRAKEN2.out.report.collect{it[1]}.ifEmpty([]))      // KRAKEN2 report
 
 
     MULTIQC (

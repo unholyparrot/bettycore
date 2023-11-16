@@ -43,6 +43,10 @@ workflow INPUT_CHECK {
         } else {
             exit 1, "An input CSV file with sample pathes and description is expected"
         }
+
+        if(!params.kraken2_db) {
+            exit 1, "Kraken2 db is required for correct work"
+        }
         
         // Ensure run IDs are unique within samples (also prevents duplicated sample names)
         // пока не могу разобраться, почему тут не используется exit, но используется error :O 
